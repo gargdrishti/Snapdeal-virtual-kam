@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Call history – Snapdeal Virtual KAM</title><link rel="icon" href="snapdeal-icon.png"><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="shell.css"></head><body><header><div class="brand"><img src="snapdeal-icon.png" width="28" height="28" alt="Snapdeal">Snapdeal <small>Virtual KAM</small></div><nav data-nav></nav></header><main>
+<div class="hd"><div><h1>Call history</h1><p class="sub">Every call is stored with its diagnosis, actions, what the seller said and any guardrail that fired. Riya reads this memory before the next call.</p></div><button class="btn ghost" id="csv">Export CSV</button></div>
+<div class="two"><section class="card"><table><thead><tr><th>When</th><th>Seller</th><th>Type</th><th>Outcome</th><th class="r">Actions</th></tr></thead><tbody id="rows"></tbody></table></section><section class="card" id="d"></section></div>
+</main><script src="nav.js"></script><script>
+let C=[],cur=null;const oc=o=>/Escal/.test(o)?"bad":/agreed/.test(o)?"ok":"";
+const escapeText=value=>String(value).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const transcriptLine=value=>{const match=String(value).match(/^([^:]+):\s*/),speaker=match?.[1],label=match?(window.kamIsHindi?.()?({"Riya":"रिया","You":"आप"}[speaker]||window.translateHindi?.(speaker)||speaker)+": ":match[0]):"",body=match?String(value).slice(match[0].length):String(value);return `<p class="meta">${label}<span data-no-translate>${escapeText(body)}</span></p>`};
+const fmt=iso=>new Date(iso).toLocaleString(window.kamIsHindi?.()?"hi-IN":"en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const dur=s=>window.kamIsHindi?.()?Math.floor(s/60)+" मिनट "+s%60+" सेकंड":Math.floor(s/60)+"m "+s%60+"s";
+api("/api/calls").then(c=>{C=c;cur=C[0]?.id;draw()});
+function draw(){$("rows").innerHTML=C.map(c=>`<tr class="row ${c.id===cur?"sel":""}" data-id="${c.id}" tabindex="0"><td data-l="When">${fmt(c.when)}<div class="meta">${c.id}${c.demo?" · demo":""}</div></td><td data-l="Seller"><b>${c.seller}</b></td><td data-l="Type">${c.type}</td><td data-l="Outcome"><span class="st ${oc(c.outcome)}">${c.outcome}</span></td><td class="r" data-l="Actions">${c.actions.length}</td></tr>`).join("")||'<tr><td>No calls yet.</td></tr>';
+ document.querySelectorAll("tr.row").forEach(r=>{r.onclick=()=>{cur=r.dataset.id;draw();if(innerWidth<900)$("d").scrollIntoView({behavior:"smooth"})};r.onkeydown=e=>e.key==="Enter"&&r.click()});detail()}
+function detail(){const c=C.find(x=>x.id===cur);if(!c){$("d").innerHTML='<p class="meta">Select a call.</p>';return}
+ $("d").innerHTML=`<h3>${c.seller}</h3><p class="meta">${c.id} · ${dur(c.secs||0)} · ${c.mode}</p><div class="acts" style="justify-content:flex-start;flex-wrap:wrap;margin:10px 0"><button class="btn sm" id="rep">Open report</button><button class="btn ghost sm" id="dl">Download</button><button class="btn ghost sm" id="again">Call this seller</button></div>
+ <h3><small>ACTIONS</small></h3>${c.actions.map(a=>`<div class="act"><b>${a.title} <span class="mono">${a.ref||""}</span></b><span class="meta">${a.detail||""}</span></div>`).join("")||'<p class="meta">None</p>'}
+ ${c.said?`<h3 style="margin-top:14px"><small>SELLER SAID</small></h3><p class="q" data-no-translate>“${c.said}”</p>`:""}
+ ${c.guardrails?.length?`<h3><small>GUARDRAILS FIRED</small></h3><p class="amber">${c.guardrails.map(g=>"Guardrail: "+g).join("<br>")}</p>`:""}
+ ${c.transcript?.length?`<h3><small>TRANSCRIPT</small></h3>${c.transcript.map(transcriptLine).join("")}`:""}`;
+ const text=()=>`Call ${c.id} - ${c.seller}\n${fmt(c.when)} · ${c.type} · ${c.outcome}\n\nActions:\n${c.actions.map(a=>`- ${a.title} ${a.ref||""}: ${a.detail||""}`).join("\n")}\n\nSeller said: ${c.said||"-"}\nGuardrails: ${c.guardrails?.join(", ")||"none"}\n\nTranscript:\n${(c.transcript||[]).join("\n")}\n`;
+ $("rep").onclick=()=>{const w=open("","_blank");w.document.write(`<title>${c.id}</title><pre style="font:14px/1.6 system-ui;white-space:pre-wrap;max-width:720px;margin:32px auto;padding:0 16px">${text().replace(/</g,"&lt;")}</pre>`);w.document.close()};
+ $("dl").onclick=()=>save(c.id+".txt",text(),"text/plain");$("again").onclick=()=>location.href=`call.html?seller=${encodeURIComponent(c.sellerId)}`}
+const save=(n,t,m)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()};
+$("csv").onclick=()=>save("call-history.csv",["id,when,seller,type,outcome,actions"].concat(C.map(c=>[c.id,c.when,c.seller,c.type,c.outcome,c.actions.length].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))).join("\n"),"text/csv");
+</script></body></html>

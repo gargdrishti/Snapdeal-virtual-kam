@@ -1,0 +1,350 @@
+[
+ {
+  "id": "CALL-0283B7",
+  "demo": true,
+  "when": "2026-11-10T10:41:10.776Z",
+  "sellerId": "SD-51970",
+  "seller": "Meena Kurtis & Ethnic Wear",
+  "type": "Riya called",
+  "outcome": "Actions agreed",
+  "secs": 5,
+  "mode": "offline",
+  "actions": [
+   {
+    "title": "Fix task: Dispatch",
+    "ref": "FIX-3110",
+    "detail": "Daily pickup slot + packing cut-off at 4pm; target dispatch under 36h"
+   },
+   {
+    "title": "Fix task: Ratings",
+    "ref": "FIX-3117",
+    "detail": "Fix packaging and product-match complaints; audit returns"
+   },
+   {
+    "title": "Support ticket",
+    "ref": "TKT-5113",
+    "detail": "Request a fixed daily pickup window to bring dispatch under the 48h SLA"
+   },
+   {
+    "title": "Follow-up call",
+    "ref": "FUP-303",
+    "detail": "In 48h: progress on slow dispatch"
+   }
+  ],
+  "said": "Pickup comes late and my staff is short.",
+  "guardrails": [
+   "off-topic request"
+  ],
+  "transcript": [
+   "Riya: Hello Meena, I'm calling about your sales dip.",
+   "Meena: Pickup comes late and my staff is short.",
+   "Riya: I'll set a fixed pickup slot and a follow-up in 48 hours."
+  ]
+ },
+ {
+  "id": "CALL-DFE53C",
+  "demo": true,
+  "when": "2026-11-07T10:41:10.776Z",
+  "sellerId": "SD-51044",
+  "seller": "Gupta Mobile Accessories",
+  "type": "Riya called",
+  "outcome": "Actions agreed",
+  "secs": 140,
+  "mode": "offline",
+  "actions": [
+   {
+    "title": "Re-price top SKUs",
+    "ref": "FIX-2201",
+    "detail": "Move top 5 SKUs to category median"
+   },
+   {
+    "title": "Follow-up call",
+    "ref": "FUP-204",
+    "detail": "In 48h"
+   }
+  ],
+  "said": "Competitors are cheaper.",
+  "guardrails": [],
+  "transcript": [
+   "Riya: Your average price is above market.",
+   "Gupta: Competitors are cheaper."
+  ]
+ },
+ {
+  "id": "CALL-881218",
+  "demo": true,
+  "when": "2026-11-06T10:41:10.776Z",
+  "sellerId": "SD-52011",
+  "seller": "Pooja Beauty & Personal Care",
+  "type": "Seller called",
+  "outcome": "Actions agreed",
+  "secs": 210,
+  "mode": "offline",
+  "actions": [
+   {
+    "title": "Fix task: Packaging",
+    "ref": "FIX-2310",
+    "detail": "Audit returns"
+   },
+   {
+    "title": "Coupon",
+    "ref": "FIX-2311",
+    "detail": "Run a 5% coupon"
+   },
+   {
+    "title": "Follow-up call",
+    "ref": "FUP-218",
+    "detail": "In 48h"
+   }
+  ],
+  "said": "Returns are rising.",
+  "guardrails": [],
+  "transcript": [
+   "Pooja: Returns are rising."
+  ]
+ },
+ {
+  "id": "CALL-8FC449",
+  "demo": true,
+  "when": "2026-11-05T10:41:10.776Z",
+  "sellerId": "SD-52390",
+  "seller": "Sharma Kitchen & Cookware",
+  "type": "Seller called",
+  "outcome": "Escalated to human",
+  "secs": 75,
+  "mode": "offline",
+  "actions": [
+   {
+    "title": "Escalated to senior KAM",
+    "ref": "ESC-77",
+    "detail": "Callback in 30 minutes with full context"
+   }
+  ],
+  "said": "This is useless, I want a human.",
+  "guardrails": [
+   "frustration detected"
+  ],
+  "transcript": [
+   "Sharma: This is useless, I want a human."
+  ]
+ },
+ {
+  "id": "CALL-9ACF99",
+  "demo": true,
+  "when": "2026-11-01T10:41:10.776Z",
+  "sellerId": "SD-52833",
+  "seller": "Ramesh Stationery & Office",
+  "type": "Riya called",
+  "outcome": "No action needed",
+  "secs": 60,
+  "mode": "offline",
+  "actions": [
+   {
+    "title": "Follow-up call",
+    "ref": "FUP-120",
+    "detail": "In 7 days"
+   }
+  ],
+  "said": "Just a seasonal dip.",
+  "guardrails": [],
+  "transcript": [
+   "Ramesh: Just a seasonal dip."
+  ]
+ },
+ {
+  "id": "CALL-2719FA",
+  "when": "2026-11-10T10:41:26.456Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-4E6C9A",
+  "when": "2026-11-10T10:41:28.126Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-CBC33C",
+  "when": "2026-11-10T10:41:28.343Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-C5EC87",
+  "when": "2026-11-10T10:41:28.561Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-45FF9E",
+  "when": "2026-11-10T10:41:28.806Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-7C9198",
+  "when": "2026-11-10T10:41:29.035Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-AC9F8F",
+  "when": "2026-11-10T10:41:29.239Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-BB4A76",
+  "when": "2026-11-10T10:41:29.426Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-40A8B8",
+  "when": "2026-11-10T13:04:30.834Z",
+  "sellerId": "SD-48213",
+  "seller": "Rakesh Electronics & Home",
+  "type": "Riya called",
+  "outcome": "No action needed",
+  "secs": 89,
+  "mode": "gemini",
+  "actions": [],
+  "said": "यह श्योर वी कैन डू दैट।",
+  "guardrails": [],
+  "transcript": [
+   "Riya: Hi Rakesh, this is Riya, your Snapdeal virtual account manager. I noticed your sales slipped from ₹2 lakh to ₹1.35 lakh this month. Do you have five minutes so we can fix this together?",
+   "You: यह श्योर वी कैन डू दैट।",
+   "Riya: आपकी कीमतें बाज़ार से करीब दो प्रतिशत के अंदर हैं, इसलिए प्राइसिंग समस्या नहीं है। मैंने आपका डेटा देखा। ऑर्डर 400 से घटकर 270 हो गए, यानी लगभग बत्तीस प्रतिशत की गिरावट, और आउट-ऑफ-स्टॉक प्रोडक्ट पाँच से बढ़कर अठारह हो गए हैं। इनमें Wireless Earbuds TWS-210, Mobile Phone Case (Pack of 3), Fast Charger 33W जैसे आपके टॉप सेलर भी हैं। क्या आपको पता है ये स्टॉक में क्यों नहीं हैं?",
+   "You: हम ध्यान रखेंगे इन चीजों का।",
+   "Riya: ठीक है। दूसरी बात, कैंसलेशन आठ प्रतिशत से बढ़कर चौदह प्रतिशत हो गए, और चवालीस में से बाईस सिर्फ़ स्टॉक न होने की वजह से हैं। आम तौर पर आप ऑर्डर आने के कितने समय में डिस्पैच करते हैं?"
+  ]
+ },
+ {
+  "id": "CALL-D6D8E1",
+  "when": "2026-11-10T16:50:37.740Z",
+  "sellerId": "SD-48213",
+  "seller": "Rakesh Electronics & Home",
+  "type": "Riya called",
+  "outcome": "No action needed",
+  "secs": 78,
+  "mode": "gemini",
+  "actions": [],
+  "said": "mera number",
+  "guardrails": [],
+  "transcript": [
+   "Riya: Hello Rakesh ji, main Riya bol rahi hoon Snapdeal se. Maine notice kiya ki pichle mahine ke mukable aapki sales mein lagbhag thirty-two percent ki giraawat aayi hai. Kya aapke paas paanch minute hain is par baat karne ke liye?",
+   "You: mera number",
+   "Riya: Rakesh ji, main samajh sakti hoon, sales kam hona chinta ki baat hai. Maine data check kiya hai, aapka average selling price bilkul same hai, iska matlab pricing ki koi problem nahi hai. Par pichle mahine ke mukable aapke orders thirty-two percent kam hue hain aur kuch naye issues aaye hain. Kya main bataun ki kya wajah lag rahi hai?"
+  ]
+ },
+ {
+  "id": "CALL-5A4BA6",
+  "when": "2026-11-10T17:54:10.876Z",
+  "sellerId": "SD-51002",
+  "seller": "Imran Footwear Hub",
+  "type": "Riya called",
+  "outcome": "Call queued",
+  "secs": 0,
+  "mode": "offline",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": []
+ },
+ {
+  "id": "CALL-FB45DC",
+  "when": "2026-11-10T18:10:56.538Z",
+  "sellerId": "SD-52011",
+  "seller": "Pooja Beauty & Personal Care",
+  "type": "Riya called",
+  "outcome": "No action needed",
+  "secs": 30,
+  "mode": "gemini",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": [
+   "Riya: Hello Pooja, this is Riya calling from Snapdeal. I'm calling because your sales saw a drop of about twenty-eight percent this month, going from two lakh forty thousand rupees down to about one lakh seventy-one thousand rupees. Do you have five minutes right now to review your account together?"
+  ]
+ },
+ {
+  "id": "CALL-8543AB",
+  "when": "2026-11-10T18:17:59.420Z",
+  "sellerId": "SD-52833",
+  "seller": "Ramesh Stationery & Office",
+  "type": "Riya called",
+  "outcome": "No action needed",
+  "secs": 14,
+  "mode": "gemini",
+  "actions": [],
+  "said": "",
+  "guardrails": [],
+  "transcript": [
+   "Riya: Hello Ramesh, this is Riya, your Key Account Manager at Snapdeal. I'm calling because I noticed your sales dipped by about twelve percent this month compared to last month. Do you have five minutes to review your account?"
+  ]
+ }
+]

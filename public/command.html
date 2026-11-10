@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Command centre – Snapdeal Virtual KAM</title><link rel="icon" href="snapdeal-icon.png"><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="shell.css"></head><body><header><div class="brand"><img src="snapdeal-icon.png" width="28" height="28" alt="Snapdeal">Snapdeal <small>Virtual KAM</small></div><nav data-nav></nav></header><main>
+<div class="hd"><div><h1>Command centre</h1><p class="sub" id="sub"></p></div><a class="btn" id="top" href="call.html">Call the top seller</a></div>
+<section class="kpis" id="kpis"></section>
+<div class="grid"><div class="col"><section class="card"><h3>Call queue <small>ranked by rupees at risk</small></h3>
+<table><thead><tr><th>#</th><th>Seller</th><th class="r">Sales drop</th><th>Main cause</th><th>Last contact</th><th></th></tr></thead><tbody id="rows"></tbody></table></section></div>
+<div class="col"><section class="card"><h3>Where the money is leaking <small>all sellers, per month</small></h3><div id="leak"></div></section>
+<section class="card"><h3>Growing sellers <small>no call needed</small></h3><div id="grow"></div></section>
+<section class="card"><h3>Quality checks <small>automated eval suite</small></h3><div id="qc"></div></section></div></div>
+</main><script src="nav.js"></script><script>
+let P,C=[];const bar=(l,v,m)=>`<div class="bar"><span>${l}</span><div class="t"><i style="width:${Math.max(4,v/m*100)}%"></i></div><b>${inr(v)}</b></div>`;
+const last=s=>{const c=C.find(x=>x.sellerId===s.id);return c?ago(c.when):s.daysSinceContact==null?null:s.daysSinceContact===0?"Today":s.daysSinceContact+" days ago"};
+async function load(){[P,C]=await Promise.all([api("/api/portfolio"),api("/api/calls")]);draw();api("/api/quality").then(q=>{const t=q.reduce((a,x)=>a+x.pass,0),n=q.reduce((a,x)=>a+x.total,0);$("qc").innerHTML=`<b class="${t===n?"green":"amber"}">${t}/${n} checks passing</b><div class="chips" style="margin-top:8px">${q.map(x=>`<span>${x.name} ${x.pass}/${x.total}</span>`).join("")}</div>`})}
+function draw(){const k=P.kpi,risk=P.sellers.filter(s=>s.drop>0);$("sub").textContent=`Riya watches ${k.monitored} sellers, finds the root cause behind each sales drop, and ranks who needs a call first by rupees at risk.`;
+$("kpis").innerHTML=[["Sellers monitored",k.monitored,k.growing+" growing",""],["Need attention",k.atRisk,k.critical+" critical","red"],["Sales leaking per month",inr(k.leaking),"vs last month, across at-risk sellers","red"],["Realistically recoverable",inr(k.recoverable),"if Riya's plans are followed","green"]].map(a=>`<div class="card kpi"><span>${a[0]}</span><b class="${a[3]}">${a[1]}</b><i>${a[2]}</i></div>`).join("");
+const q=risk.slice().sort((a,b)=>b.drop-a.drop);$("top").textContent="Call the top seller: "+q[0].name.split(" ")[0];$("top").href=`call.html?seller=${encodeURIComponent(q[0].id)}`;$("top").onclick=null;
+$("rows").innerHTML=q.map((s,i)=>{const l=last(s),due=l&&l!=="Today"&&parseInt(l)>=3;return`<tr class="row"><td data-l="Rank">${i+1}</td><td data-l="Seller"><div class="sellername">${s.name}${s.live?' <span class="tag growing">live demo</span>':""}</div><div class="meta">${s.city} · ${s.tier} <span class="tag ${s.severity}">${s.severity}</span></div></td>
+<td class="r" data-l="Sales drop">${inr(s.drop)}<div class="meta red">-${s.dropPct}%</div></td><td data-l="Main cause">${s.mainCause}<div class="meta">${inr(s.causes[0].rupees)}${s.causes[1]?" · then "+s.causes[1].label.toLowerCase():""}</div></td>
+<td data-l="Last contact">${l||'<span class="amber">Never contacted</span>'}${due?'<div><span class="tag high">Follow-up due</span></div>':""}</td>
+<td data-l=""><div class="acts"><button class="btn sm" data-c="${s.id}">${l?"Follow up":"Riya calls"}</button><a class="btn ghost sm" href="planner.html?seller=${s.id}">Plan</a></div></td></tr>`}).join("");
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{location.href=`call.html?seller=${encodeURIComponent(b.dataset.c)}`});
+$("leak").innerHTML=P.leakage.map(c=>bar(c.label,c.rupees,P.leakage[0].rupees)).join("");
+$("grow").innerHTML=P.sellers.filter(s=>!s.drop).map(s=>`<div class="hd" style="align-items:center"><div><b>${s.name}</b><div class="meta">${s.city}</div></div><span class="green">+${Math.abs(s.dropPct)}%</span><a class="btn ghost sm" href="call.html?seller=${encodeURIComponent(s.id)}">Growth call</a></div>`).join("")||'<p class="meta">None</p>'}
+load();</script></body></html>

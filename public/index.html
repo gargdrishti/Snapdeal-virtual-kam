@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seller health dashboard – Snapdeal Virtual KAM</title><link rel="icon" href="snapdeal-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shell.css"></head><body>
+<header>
+ <div class="brand"><img src="snapdeal-icon.png" width="28" height="28" alt="Snapdeal">Snapdeal <small>Virtual KAM</small></div>
+ <nav data-nav></nav>
+</header>
+<main>
+ <h1>Seller health dashboard</h1>
+ <p class="sub">Riya watches every seller, finds the root cause behind each sales drop and ranks who needs a call first by rupees she can win back.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin:-6px 0 18px"><a class="btn" href="command.html">Open Command centre</a><a class="btn ghost" href="call.html">Start live call</a><a class="btn ghost" href="planner.html">What-if planner</a></div>
+ <section class="kpis" id="kpis"></section>
+ <div class="grid">
+  <div class="col">
+   <section class="card"><h3>Call queue <small>ranked by recoverable rupees</small></h3>
+    <div class="filters"><input id="q" placeholder="Search seller or city" aria-label="Search"><select id="fc" aria-label="Filter by cause"><option value="">All causes</option></select><select id="fs" aria-label="Filter by status"><option value="">All status</option><option>critical</option><option>high</option><option>watch</option><option>growing</option></select></div>
+    <table><thead><tr><th>#</th><th>Seller</th><th class="r">Sales drop</th><th>Main cause</th><th class="r">Recoverable</th><th>Contact</th></tr></thead><tbody id="rows"></tbody></table>
+   </section>
+   <section class="card"><h3>Portfolio sales, last 6 months <small id="trendNote"></small></h3><div id="trend"></div></section>
+  </div>
+  <div class="col">
+   <section class="card" id="detail"><h3>Seller plan</h3><p class="empty">Select a seller in the queue to see Riya's diagnosis and action plan.</p></section>
+   <section class="card"><h3>Where the money is leaking <small>all sellers, per month</small></h3><div id="leak"></div></section>
+  </div>
+ </div>
+</main>
+<script>
+const $=id=>document.getElementById(id),inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");let D,sel=null;
+const contact=s=>s.daysSinceContact==null?'<span class="amber">Never contacted</span>':s.daysSinceContact+" days ago";
+fetch("/api/portfolio").then(r=>r.json()).then(d=>{D=d;kpis();causes();rows();leak();trend();$("q").oninput=$("fc").onchange=$("fs").onchange=rows});
+function kpis(){const k=D.kpi;$("kpis").innerHTML=[["Sellers monitored",k.monitored,k.growing+" growing",""],["Need attention",k.atRisk,k.critical+" critical","red"],["Sales leaking / month",inr(k.leaking),"vs last month, at-risk sellers","red"],["Realistically recoverable",inr(k.recoverable),"if Riya's plans are followed","green"],["Never contacted",k.neverContacted,"call these first","amber"]].map(a=>`<div class="card kpi"><span>${a[0]}</span><b class="${a[3]}">${a[1]}</b><i>${a[2]}</i></div>`).join("")}
+function causes(){D.leakage.forEach(c=>$("fc").insertAdjacentHTML("beforeend",`<option>${c.label}</option>`))}
+function rows(){const q=$("q").value.toLowerCase(),fc=$("fc").value,fs=$("fs").value;
+ $("rows").innerHTML=D.sellers.filter(s=>(!q||(s.name+s.city).toLowerCase().includes(q))&&(!fc||s.causes.some(c=>c.label===fc))&&(!fs||s.severity===fs)).map(s=>`<tr class="row ${sel===s.id?"sel":""}" data-id="${s.id}" tabindex="0">
+ <td data-l="Rank">${s.rank}</td><td data-l="Seller"><div class="sellername">${s.name}${s.live?' <span class="tag growing">live demo</span>':""}</div><div class="meta">${s.city} · ${s.tier} <span class="tag ${s.severity}">${s.severity}</span></div></td>
+ <td class="r" data-l="Sales drop">${s.drop?inr(s.drop)+'<div class="meta red">-'+s.dropPct+"%</div>":'<span class="green">+'+Math.abs(s.dropPct)+"%</span>"}</td>
+ <td data-l="Main cause">${s.mainCause}</td><td class="r green" data-l="Recoverable">${s.recoverable?inr(s.recoverable):"–"}</td><td data-l="Contact">${contact(s)}</td></tr>`).join("")||'<tr><td>No sellers match.</td></tr>';
+ document.querySelectorAll("tr.row").forEach(r=>{r.onclick=()=>pick(r.dataset.id);r.onkeydown=e=>e.key==="Enter"&&pick(r.dataset.id)})}
+function pick(id){sel=id;const s=D.sellers.find(x=>x.id===id);rows();
+ $("detail").innerHTML=`<h3>${s.name} <small>${s.id} · ${s.city}</small></h3>
+ <div class="meta" style="margin-bottom:8px">Sales ${inr(s.sales)} vs ${inr(s.lastSales)} last month ${s.drop?`(<span class="red">-${s.dropPct}%</span>)`:""}</div>
+ ${s.drop?s.causes.map(c=>bar(c.label,c.rupees,s.drop)).join(""):'<p class="green">Growing. No call needed, only a growth check-in.</p>'}
+ ${s.actions.length?'<h3 style="margin-top:16px">What Riya will do</h3>'+s.actions.map(a=>`<div class="act"><b><span>${a.cause}</span><span class="red">${inr(a.rupees)}</span></b><span class="meta">${a.do}</span></div>`).join(""):""}
+ <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="call.html?seller=${encodeURIComponent(s.id)}">Start live voice call</a></div>
+ <p class="meta" style="margin-top:10px">${s.live?"This seller has detailed demo metrics and product-level tools.":"This seller uses mock portfolio estimates; SKU-level details are unavailable."}</p>`;
+ if(innerWidth<980)$("detail").scrollIntoView({behavior:"smooth"})}
+function bar(l,v,m){return `<div class="bar"><span>${l}</span><div class="t"><i style="width:${Math.max(4,v/m*100)}%"></i></div><b>${inr(v)}</b></div>`}
+function leak(){const m=D.leakage[0].rupees;$("leak").innerHTML=D.leakage.map(c=>bar(c.label,c.rupees,m)).join("")}
+function trend(){const v=D.trend,W=600,H=200,p=28,mx=Math.max(...v)*1.1,mn=Math.min(...v)*.85,x=i=>p+i*(W-2*p)/(v.length-1),y=n=>H-p-(n-mn)/(mx-mn)*(H-2*p);
+ const pts=v.map((n,i)=>x(i)+","+y(n)).join(" ");$("trendNote").textContent=inr(v[4]-v[5])+" lost last month";
+ $("trend").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Portfolio sales trend"><polyline points="${pts}" fill="none" stroke="#E40046" stroke-width="3" stroke-linejoin="round"/>${v.map((n,i)=>`<circle cx="${x(i)}" cy="${y(n)}" r="4" fill="${i==5?"#FFB547":"#E40046"}"/><text x="${x(i)}" y="${H-6}" fill="#9FA1CC" font-size="12" text-anchor="middle">${D.months[i]}</text><text x="${x(i)}" y="${y(n)-10}" fill="#ECEBFF" font-size="11" text-anchor="middle">${(n/100000).toFixed(1)}L</text>`).join("")}</svg>`}
+</script><script src="nav.js"></script></body></html>
