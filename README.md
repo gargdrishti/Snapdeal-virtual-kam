@@ -3,7 +3,7 @@
 A browser-based voice agent ("Riya") that talks to a Snapdeal seller whose sales dropped, diagnoses the cause from data,
 recommends actions, **takes the actions itself** (tasks / tickets / follow-up) and summarises the call.
 
-## Run it (2 minutes)
+## Run it 
 Needs Node 18+ and **Chrome or Edge** (for browser speech recognition).
 
     npm install
