@@ -47,7 +47,7 @@ const HI = {
   "Search impressions": "सर्च इम्प्रेशन", "Clicks per view are steady, fewer people see you": "क्लिक दर स्थिर है, पर कम लोग आपको देख रहे हैं", "Total drop": "कुल गिरावट",
   "Stock-outs": "स्टॉक खत्म होना", "Higher cancellations": "ज़्यादा कैंसलेशन", "Lower visibility / other demand": "कम विज़िबिलिटी / अन्य माँग",
   "Restock task": "स्टॉक भरने का काम", "Support ticket": "सहायता अनुरोध", "Follow-up call": "फ़ॉलो-अप कॉल", "Handed to human KAM": "वरिष्ठ खाता प्रबंधक को सौंपा", "Summary via whatsapp": "व्हाट्सऐप पर सारांश", "Summary via sms": "एसएमएस पर सारांश", "Summary via email": "ईमेल पर सारांश",
-  "Reply in": "जवाब में", "Offline demo brain": "ऑफ़लाइन डेमो ब्रेन", "Offline (LLM unreachable)": "ऑफ़लाइन (AI से संपर्क नहीं)", "browser voice": "ब्राउज़र आवाज़", "ElevenLabs voice": "ElevenLabs आवाज़",
+  "Reply in": "जवाब में", "Offline demo brain": "ऑफ़लाइन डेमो ब्रेन", "Offline (LLM unreachable)": "ऑफ़लाइन (एआई से संपर्क नहीं)", "browser voice": "ब्राउज़र आवाज़", "ElevenLabs voice": "ElevenLabs आवाज़", "Round trip / AI time for the last turn": "पिछले जवाब और एआई का समय",
 };
 const L = (en, hi) => (lang === "hi" ? hi : en);
 const tr = (s) => {
@@ -69,6 +69,7 @@ function applyStatic() {
   }
   $("langEn").textContent = tr("English");
   $("langHi").textContent = tr("Hindi");
+  $("latency").title = tr("Round trip / AI time for the last turn");
   document.querySelector(".seller-picker span").textContent = tr("Choose a seller");
   document.title = lang === "hi" ? "रिया – स्नैपडील वर्चुअल अकाउंट मैनेजर" : "Riya – Snapdeal Virtual KAM";
   document.querySelectorAll("#try button").forEach((b) => { b.dataset.en = b.dataset.en || b.textContent.trim(); b.dataset.enT = b.dataset.enT || b.dataset.t; b.textContent = tr(b.dataset.en); b.dataset.t = tr(b.dataset.enT); });
@@ -385,7 +386,7 @@ function renderLatency() {
   const { roundTrip, ai } = lastLatency;
   $("latency").textContent = L(
     `Reply in ${roundTrip}s · AI ${ai}s`,
-    `जवाब ${roundTrip} सेकंड में · AI ${ai} सेकंड`
+    `जवाब ${roundTrip} सेकंड में · एआई ${ai} सेकंड`
   );
   $("latency").classList.remove("hidden");
 }
@@ -532,7 +533,18 @@ $("btnMic").onclick = () => { micOn = !micOn; setMic(); if (micOn) afterBot(); e
 $("btnKeys").onclick = () => { const o = $("typer").classList.toggle("hidden"); $("btnKeys").setAttribute("aria-expanded", !o); if (!o) $("typeInput").focus(); };
 $("typeForm").onsubmit = (e) => { e.preventDefault(); const v = $("typeInput").value.trim(); if (v && inCall) { $("typeInput").value = ""; handleUser(v); } };
 $("try").onclick = (e) => { const t = e.target.dataset?.t; if (t && inCall) handleUser(t); };
-for (const [id, l] of [["langEn", "en"], ["langHi", "hi"]]) $(id).onclick = () => { lang = l; try { localStorage.setItem("kamLang", l); } catch {} $("langEn").setAttribute("aria-pressed", l === "en"); $("langHi").setAttribute("aria-pressed", l === "hi"); document.documentElement.lang = l; window.dispatchEvent(new CustomEvent("kam-language-change", { detail: { lang } })); applyStatic(); stopListening(); if (inCall && !busy && !speaking) startListening(); };
+function setLanguage(next) {
+  lang = next === "hi" ? "hi" : "en";
+  try { localStorage.setItem("kamLang", lang); } catch {}
+  $("langEn").setAttribute("aria-pressed", lang === "en");
+  $("langHi").setAttribute("aria-pressed", lang === "hi");
+  document.documentElement.lang = lang;
+  window.dispatchEvent(new CustomEvent("kam-language-change", { detail: { lang } }));
+  applyStatic();
+  stopListening();
+  if (inCall && !busy && !speaking) startListening();
+}
+for (const [id, language] of [["langEn", "en"], ["langHi", "hi"]]) $(id).onclick = () => setLanguage(language);
 renderJourney();
 $("langEn").setAttribute("aria-pressed", lang === "en"); $("langHi").setAttribute("aria-pressed", lang === "hi");
 const initialSellerId = new URLSearchParams(location.search).get("seller");
