@@ -73,7 +73,11 @@ const START_PROMPTS = {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { sessionId = randomUUID(), text, start, sellerId } = req.body || {};
+    const { text, start, sellerId } = req.body || {};
+    const requestedSessionId = req.body?.sessionId;
+    const sessionId = typeof requestedSessionId === "string" && requestedSessionId.trim()
+      ? requestedSessionId
+      : randomUUID();
     const lang = req.body?.lang === "hi" ? "hi" : "en";
     const session = getSession(sessionId);
     if (sellerId) {
