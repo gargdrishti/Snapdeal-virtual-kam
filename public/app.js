@@ -385,8 +385,8 @@ function renderLatency() {
   if (!lastLatency) return;
   const { roundTrip, ai } = lastLatency;
   $("latency").textContent = L(
-    `Reply in ${roundTrip}s · AI ${ai}s`,
-    `जवाब ${roundTrip} सेकंड में · एआई ${ai} सेकंड`
+    `Reply in ${roundTrip} seconds · AI took ${ai} seconds`,
+    `जवाब ${roundTrip} सेकंड में आया · एआई ने ${ai} सेकंड लिए`
   );
   $("latency").classList.remove("hidden");
 }
