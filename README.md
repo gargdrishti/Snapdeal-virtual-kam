@@ -12,7 +12,7 @@ Needs Node 18+ and **Chrome or Edge** (for browser speech recognition).
 
 Choose a seller on the Live call page, allow the microphone, then start a seller-to-Riya or Riya-to-seller call.
 
-## Brains (pick any; all optional)
+## Brains 
 | Key in .env | Brain |
 |---|---|
 | `GEMINI_API_KEY` | Gemini with function calling (free key from Google AI Studio) |
