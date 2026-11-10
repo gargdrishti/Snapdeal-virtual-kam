@@ -6,6 +6,7 @@ let cfg = null, lang = localStorage.getItem("kamLang") === "hi" ? "hi" : "en", s
 let inCall = false, busy = false, speaking = false, micOn = true, rec = null, recActive = false;
 let timerId = null, t0 = 0, curAudio = null, speakId = 0, orbState = "idle";
 let seen = new Set(), callMode = "seller_call", followupReady = false, turns = 0, toolCount = 0;
+let lastLatency = null, lastCallStats = null;
 
 const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 
@@ -72,6 +73,8 @@ function applyStatic() {
   document.title = lang === "hi" ? "रिया – स्नैपडील वर्चुअल अकाउंट मैनेजर" : "Riya – Snapdeal Virtual KAM";
   document.querySelectorAll("#try button").forEach((b) => { b.dataset.en = b.dataset.en || b.textContent.trim(); b.dataset.enT = b.dataset.enT || b.dataset.t; b.textContent = tr(b.dataset.en); b.dataset.t = tr(b.dataset.enT); });
   setMic(); document.documentElement.lang = lang === "hi" ? "hi" : "en";
+  renderLatency();
+  renderCallStats();
   if (cfg) { renderDossier(); renderHero(); }
   renderJourney();
   if (!inCall) { $("stateText").textContent = ""; $("orbWord").textContent = tr("Riya"); }
@@ -377,6 +380,24 @@ function syncLanguageControls() {
 }
 
 /* =============== conversation =============== */
+function renderLatency() {
+  if (!lastLatency) return;
+  const { roundTrip, ai } = lastLatency;
+  $("latency").textContent = L(
+    `Reply in ${roundTrip}s · AI ${ai}s`,
+    `जवाब ${roundTrip} सेकंड में · AI ${ai} सेकंड`
+  );
+  $("latency").classList.remove("hidden");
+}
+function renderCallStats() {
+  if (!lastCallStats) return;
+  const { minutes, seconds, turns: turnCount, toolCalls } = lastCallStats;
+  $("stats").textContent = L(
+    `Last call: ${minutes}m ${seconds}s · ${turnCount} turns · ${toolCalls} tool calls`,
+    `पिछली कॉल: ${minutes} मिनट ${seconds} सेकंड · ${turnCount} बार संवाद · ${toolCalls} टूल कॉल`
+  );
+  $("stats").classList.remove("hidden");
+}
 // async function callApi(body) {
 //   const t = performance.now();
 //   const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, lang, sellerId: cfg.seller.id, ...body }) });
@@ -421,12 +442,11 @@ async function callApi(body) {
   sessionId = d.sessionId;
   turns++;
 
-  $("latency").textContent = L(
-    `Reply in ${((performance.now() - t) / 1000).toFixed(1)}s · AI ${(d.ms / 1000).toFixed(1)}s`,
-    `जवाब ${((performance.now() - t) / 1000).toFixed(1)} से · AI ${(d.ms / 1000).toFixed(1)} से`
-  );
-
-  $("latency").classList.remove("hidden");
+  lastLatency = {
+    roundTrip: ((performance.now() - t) / 1000).toFixed(1),
+    ai: (d.ms / 1000).toFixed(1),
+  };
+  renderLatency();
 
   return d;
 }
@@ -489,7 +509,8 @@ async function startCall(mode) {
 function endCall() {
   inCall = false; busy = false; speaking = false; syncLanguageControls(); speakId++; stopSpeaking(); stopListening(); clearInterval(timerId); finishCaption();
   const secs = Math.floor((Date.now() - t0) / 1000);
-  $("stats").textContent = L(`Last call: ${Math.floor(secs / 60)}m ${secs % 60}s · ${turns} turns · ${toolCount} tool calls`, `पिछली कॉल: ${Math.floor(secs / 60)} मिनट ${secs % 60} सेकंड · ${turns} बारी · ${toolCount} टूल कॉल`); $("stats").classList.remove("hidden");
+  lastCallStats = { minutes: Math.floor(secs / 60), seconds: secs % 60, turns, toolCalls: toolCount };
+  renderCallStats();
   if (followupReady && callMode !== "followup") $("btnFF").classList.remove("hidden");
   if (turns > 0) fetch("/api/calls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, sellerId: cfg?.seller?.id, type: callMode === "seller_call" ? "Seller called" : "Riya called", secs, mode: cfg?.brain || "offline", transcript: [...document.querySelectorAll("#transcript p")].map((p) => p.textContent), said: [...document.querySelectorAll("#transcript p")].find((p) => p.className !== "b")?.textContent?.replace(/^[^:]+:\s*/, "") || "" }) }).catch((error) => console.error("Could not save call history:", error));
   setOrb("idle", "Call ended"); $("dock").classList.add("hidden"); $("typer").classList.add("hidden"); $("livePill").classList.add("hidden");
