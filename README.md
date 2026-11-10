@@ -51,4 +51,3 @@ Optional: `ELEVENLABS_API_KEY` and API-eligible voice IDs (`ELEVENLABS_VOICE_ID_
     lib/offline.js   offline conversation brain (EN + HI)
     public/          browser voice client (Web Speech API)
 
-See NOTE.md (submission note) and DEMO_SCRIPT.md (1-2 min screen recording).
