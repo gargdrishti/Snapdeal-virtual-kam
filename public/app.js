@@ -1,301 +1,3 @@
-// const $ = (id) => document.getElementById(id);
-// const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-// const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-// const LANGS = { en: "en-IN", hi: "hi-IN" };
-// let cfg = null, lang = localStorage.getItem("kamLang") || "en", sessionId = null;
-// let inCall = false, busy = false, speaking = false, micOn = true, rec = null, recActive = false;
-// let timerId = null, t0 = 0, curAudio = null, speakId = 0, orbState = "idle";
-// let seen = new Set(), callMode = "seller_call", followupReady = false, turns = 0, toolCount = 0;
-
-// const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
-// const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// /* =============== dossier =============== */
-// function countUp(el, to, fmt, ms = 1100) {
-//   if (REDUCED) { el.textContent = fmt(to); return; }
-//   const s = performance.now();
-//   const f = (t) => { const p = Math.min(1, (t - s) / ms), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(to * e); if (p < 1) requestAnimationFrame(f); };
-//   requestAnimationFrame(f);
-// }
-// function renderDossier() {
-//   const { last: L, now: N } = cfg.seller;
-//   $("sellerId").textContent = cfg.seller.id;
-//   $("sellerBiz").textContent = cfg.seller.business;
-//   $("sellerCat").textContent = cfg.seller.category;
-//   $("rcMeta").textContent = `${cfg.seller.business} · ${cfg.seller.id}`;
-//   countUp($("bigSales"), N.sales, inr);
-//   $("bigDelta").textContent = `${inr(L.sales - N.sales)} lower than last month (${Math.round(((N.sales - L.sales) / L.sales) * 100)}%)`;
-//   const rows = [
-//     ["Orders", L.orders, N.orders, String, "lower"],
-//     ["Cancellation rate", L.cancellationRate, N.cancellationRate, (v) => v + "%", "higher"],
-//     ["Average selling price", L.asp, N.asp, inr, "flat"],
-//     ["Products out of stock", L.outOfStock, N.outOfStock, String, "higher"],
-//   ];
-//   $("metrics").innerHTML = rows.map(([label, a, b, fmt, kind]) => {
-//     const ch = Math.round(((b - a) / a) * 100), max = Math.max(a, b);
-//     const flat = kind === "flat";
-//     return `<li><div class="m-row"><span class="m-label">${label}</span><span class="m-delta ${flat ? "flat" : "bad"}">${flat ? "No change" : (ch > 0 ? "+" : "") + ch + "%"}</span></div>
-//       <div class="m-vals"><span class="now">${fmt(b)}</span><span class="was">${fmt(a)}</span></div>
-//       <div class="m-bars"><i class="a" style="width:0" data-w="${(a / max) * 100}"></i><i class="b ${flat ? "ok" : ""}" style="width:0" data-w="${(b / max) * 100}"></i></div></li>`;
-//   }).join("");
-//   setTimeout(() => document.querySelectorAll(".m-bars i").forEach((i) => (i.style.width = i.dataset.w + "%")), 150);
-// }
-
-// /* =============== hero copy =============== */
-// function renderHero() {
-//   const d = cfg.seller.last.sales - cfg.seller.now.sales;
-//   document.querySelector(".hero h1").textContent = `${cfg.seller.name}’s sales are down ${inr(d)} this month.`;
-//   document.querySelector(".fine").textContent = "Mock data for this assignment. Visibility figures, cancellation reasons and the product list are my assumptions.";
-// }
-
-// /* =============== orb (voice visual) =============== */
-// const cv = $("orb"), ctx = cv.getContext("2d");
-// let audioCtx = null, analyser = null, freq = null, micStream = null;
-// const N_BARS = 96, amps = new Float32Array(N_BARS);
-// function sizeCanvas() { const r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); cv.width = r.width * d; cv.height = r.height * d; }
-// addEventListener("resize", sizeCanvas);
-// const COLORS = { idle: [159, 161, 204], listening: [255, 181, 71], thinking: [159, 161, 204], speaking: [228, 0, 70] };
-// function drawOrb(ts) {
-//   requestAnimationFrame(drawOrb);
-//   if (!cv.width) sizeCanvas();
-//   const w = cv.width, cx = w / 2, base = w * 0.265, k = REDUCED ? 0.3 : 1;
-//   ctx.clearRect(0, 0, w, w);
-//   if (orbState === "listening" && analyser) analyser.getByteFrequencyData(freq);
-//   const [r, g, b] = COLORS[orbState];
-//   const spin = (ts / 2200) % (Math.PI * 2);
-//   for (let i = 0; i < N_BARS; i++) {
-//     const m = i < N_BARS / 2 ? i : N_BARS - i; let target;
-//     if (orbState === "speaking") target = (0.18 + 0.82 * Math.abs(Math.sin(ts / 170 + m * 0.42) * Math.sin(ts / 430 + m * 0.13))) * (0.65 + 0.35 * Math.sin(ts / 260));
-//     else if (orbState === "listening") target = analyser ? Math.pow(freq[Math.floor(m * 1.1) + 2] / 255, 1.3) * 1.15 : 0.1 + 0.08 * Math.sin(ts / 300 + m * 0.5);
-//     else if (orbState === "thinking") { const a = (i / N_BARS) * Math.PI * 2, d = Math.cos(a - spin * 2.2); target = 0.06 + (d > 0.85 ? (d - 0.85) * 5 : 0); }
-//     else target = 0.07 + 0.05 * Math.sin(ts / 900 + m * 0.25);
-//     amps[i] += (target * k - amps[i]) * 0.28;
-//     const a = (i / N_BARS) * Math.PI * 2 - Math.PI / 2, len = w * 0.03 + amps[i] * w * 0.2;
-//     ctx.strokeStyle = `rgba(${r},${g},${b},${0.45 + Math.min(.55, amps[i])})`;
-//     ctx.lineWidth = w * 0.0105; ctx.lineCap = "round";
-//     ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * base * 1.12, cx + Math.sin(a) * base * 1.12); ctx.lineTo(cx + Math.cos(a) * (base * 1.12 + len), cx + Math.sin(a) * (base * 1.12 + len)); ctx.stroke();
-//   }
-//   const grad = ctx.createRadialGradient(cx * 0.9, cx * 0.85, base * 0.1, cx, cx, base * 1.05);
-//   grad.addColorStop(0, `rgba(${r},${g},${b},.95)`); grad.addColorStop(1, `rgba(${r * .45 | 0},${g * .45 | 0},${b * .45 | 0},.95)`);
-//   ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(cx, cx, base * (1 + (orbState === "idle" ? 0.012 * Math.sin(ts / 700) : 0)), 0, 7); ctx.fill();
-// }
-// requestAnimationFrame(drawOrb);
-
-// const STATE_TEXT = { idle: "", listening: "Listening. Speak when you’re ready.", thinking: "Checking your account…", speaking: "Riya is speaking" };
-// function setOrb(state, text) {
-//   orbState = state; $("stateText").textContent = text || STATE_TEXT[state];
-//   $("orbWord").textContent = state === "listening" ? "You" : state === "thinking" ? "…" : "Riya";
-// }
-// async function initMic() {
-//   if (analyser) return;
-//   try {
-//     micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-//     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-//     analyser = audioCtx.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.7;
-//     audioCtx.createMediaStreamSource(micStream).connect(analyser); freq = new Uint8Array(analyser.frequencyBinCount);
-//   } catch { analyser = null; }
-// }
-
-// /* =============== caption + transcript =============== */
-// let capTimers = [];
-// function showCaption(text, ms) {
-//   capTimers.forEach(clearTimeout); capTimers = [];
-//   const words = text.split(/\s+/);
-//   $("caption").innerHTML = words.map((w) => `<span class="w">${w.replace(/</g, "&lt;")}</span>`).join(" ");
-//   const spans = [...$("caption").children], step = ms / words.length;
-//   spans.forEach((s, i) => capTimers.push(setTimeout(() => s.classList.add("on"), REDUCED ? 0 : i * step)));
-// }
-// function finishCaption() { capTimers.forEach(clearTimeout); document.querySelectorAll("#caption .w").forEach((s) => s.classList.add("on")); }
-// function logLine(cls, text) { const p = document.createElement("p"); p.className = cls; p.textContent = (cls === "b" ? "Riya: " : "You: ") + text; $("transcript").append(p); $("transcript").scrollTop = 1e9; }
-
-// /* =============== journey =============== */
-// const STEPS_MAIN = ["Greet", "Diagnose", "Investigate", "Quantify", "Recommend", "Act", "Summarise"];
-// const STEPS_FU = ["Reconnect", "Review progress", "Find gaps", "Agree next steps", "Close the loop"];
-// let STEPS = STEPS_MAIN, reached = -1;
-// function renderJourney() { $("journey").innerHTML = STEPS.map((s, i) => `<li class="${i < reached ? "done" : i === reached ? "now" : ""}">${s}</li>`).join(""); }
-// function reach(i) { if (i > reached) { reached = i; renderJourney(); } }
-// const STEP_OF_FU = { get_followup_status: 1, get_upcoming_events: 2, create_restock_task: 3, schedule_followup: 3, send_summary: 4 };
-// const STEP_OF_MAIN = { get_price_benchmark: 1, get_seller_metrics: 1, get_oos_products: 2, get_cancellation_breakdown: 2, get_visibility_metrics: 2, get_upcoming_events: 3, estimate_impact: 4, create_restock_task: 5, raise_ticket: 5, schedule_followup: 5, escalate_to_human: 5, send_summary: 6 };
-
-// /* =============== receipt =============== */
-// const FRIENDLY = { get_price_benchmark: "Compared your prices with the market", get_upcoming_events: "Checked upcoming sale events", get_followup_status: "Checked progress since the last call", get_seller_metrics: "Checked sales and orders", get_oos_products: "Checked stock levels", get_cancellation_breakdown: "Checked cancellations", get_visibility_metrics: "Checked search visibility", estimate_impact: "Worked out what each cause cost you" };
-// function show(id) { $(id).classList.remove("hidden"); $("rcEmpty").classList.add("hidden"); }
-// function line(into, secId, html, cls = "") { show(secId); const d = document.createElement("div"); d.className = "ln " + cls; d.innerHTML = html; $(into).append(d); const col = document.querySelector(".receipt-col"); col.scrollTo({ top: col.scrollHeight, behavior: REDUCED ? "auto" : "smooth" }); }
-// const row = (t, v, cls = "") => `<span class="t">${t}</span><span class="dots"></span><span class="v">${v}</span>`;
-
-// function setStamp(a, b) { const s = $("stamp"); s.innerHTML = `<span>${a}</span><b>${b}</b>`; s.classList.remove("hidden"); s.style.animation = "none"; void s.offsetWidth; s.style.animation = ""; }
-// function chip(text, act) { const li = document.createElement("li"); li.textContent = text; if (act) li.className = "act"; $("checks").prepend(li); while ($("checks").children.length > 4) $("checks").lastChild.remove(); }
-
-// function onTool(c) {
-//   toolCount++;
-//   reach(((callMode === "followup" ? STEP_OF_FU : STEP_OF_MAIN)[c.name]) ?? reached);
-//   if (c.name === "estimate_impact") reach(4);
-//   const key = callMode + c.name + (c.result?.id || "");
-//   if (seen.has(key)) return; seen.add(key);
-//   const r = c.result || {};
-//   switch (c.name) {
-//     case "get_seller_metrics":
-//       line("linesFound", "secFound", row("Sales", `${inr(r.lastMonth.sales)} → ${inr(r.thisMonth.sales)}`), "bad");
-//       line("linesFound", "secFound", row("Avg price", "flat " + inr(r.thisMonth.asp)), "ok");
-//       line("linesFound", "secFound", "Price is not the problem", "sub"); break;
-//     case "get_price_benchmark":
-//       line("linesFound", "secFound", row("Your prices vs market", `${r.avgGapPct}%`), "ok");
-//       line("linesFound", "secFound", "In line with category median", "sub"); break;
-//     case "get_upcoming_events":
-//       if (callMode === "followup") break;
-//       line("linesFound", "secFound", row("Next sale event", `${r.events[0].name}, ${r.events[0].startsInDays}d`), "ok"); break;
-//     case "get_followup_status":
-//       line("linesFollow", "secFollow", row("Back in stock", `${r.restock.backInStock.length} of ${r.restock.backInStock.length + r.restock.stillPending.length} SKUs`), "ok");
-//       line("linesFollow", "secFollow", row("Cancellations", `14% → ${r.cancellationRateLast48h}%`), "ok");
-//       line("linesFollow", "secFollow", row("Orders per day", `${r.ordersPerDay.before} → ${r.ordersPerDay.now}`), "ok");
-//       line("linesFollow", "secFollow", row("Earning back", `${inr(r.recoveredRupeesPerDay)}/day`), "total");
-//       if (r.restock.stillPending.length) line("linesFollow", "secFollow", `${r.restock.stillPending.length} SKUs still waiting on supplier`, "sub");
-//       $("bigDelta").textContent = `Recovering: ${inr(r.recoveredRupeesPerDay)} a day back`; $("bigDelta").style.color = "var(--mint)"; break;
-//     case "get_oos_products":
-//       line("linesFound", "secFound", row("Out of stock", `${r.totalOutOfStock - r.newlyOutOfStock} → ${r.totalOutOfStock}`), "bad");
-//       line("linesFound", "secFound", r.share || "", "sub"); break;
-//     case "get_cancellation_breakdown":
-//       line("linesFound", "secFound", row("Cancellations", `${r.last.total} → ${r.now.total}`), "bad");
-//       line("linesFound", "secFound", `${r.now.reasons["Stock unavailable (seller)"]} of ${r.now.total} were because stock was not available`, "sub"); break;
-//     case "get_visibility_metrics":
-//       line("linesFound", "secFound", row("Search impressions", `${r.impressionsChangePct}%`), "bad");
-//       line("linesFound", "secFound", "Clicks per view are steady, fewer people see you", "sub"); break;
-//     case "estimate_impact": {
-//       r.causes.forEach((x) => line("linesImpact", "secImpact", row(x.cause.replace(/ \(.*?\)/, ""), inr(x.rupees)), "bad"));
-//       line("linesImpact", "secImpact", row("Total drop", inr(r.totalDropRupees)), "total"); break;
-//     }
-//     case "create_restock_task": case "raise_ticket": case "schedule_followup": case "send_summary": case "escalate_to_human":
-//       line(callMode === "followup" ? "linesFollow" : "linesDone", callMode === "followup" ? "secFollow" : "secDone", `<b>${r.type}</b> <span class="id">${r.id}</span><small>${r.detail}</small>`, "act");
-//       if (c.name === "schedule_followup") {
-//         setStamp(callMode === "followup" ? "Next check" : "Follow-up set", callMode === "followup" ? "7 days" : "48 hours");
-//         if (callMode !== "followup") { followupReady = true; $("btnFFdock").classList.remove("hidden"); }
-//       }
-//       if (c.name === "escalate_to_human") setStamp("Handed to human", "30 min");
-//       if (c.name === "send_summary") { show("rcFoot"); $("rcFoot").classList.remove("hidden"); }
-//       break;
-//   }
-//   chip(FRIENDLY[c.name] || r.type || c.name, !FRIENDLY[c.name]);
-// }
-
-// /* =============== speech output =============== */
-// function stopSpeaking() { speechSynthesis.cancel(); if (curAudio) { curAudio.pause(); curAudio = null; } }
-// async function speak(text) {
-//   const my = ++speakId; speaking = true; setOrb("speaking");
-//   const est = Math.max(2500, text.split(/\s+/).length * 330);
-//   showCaption(text, est);
-//   if (!$("barge").checked) stopListening();
-//   try {
-//     if (cfg.tts) {
-//       try {
-//         const r = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-//         if (r.ok) { const url = URL.createObjectURL(await r.blob()); await new Promise((res) => { curAudio = new Audio(url); curAudio.onended = curAudio.onerror = res; curAudio.play().catch(res); }); return; }
-//       } catch {}
-//     }
-//     await new Promise((resolve) => {
-//       const l = LANGS[lang], voices = speechSynthesis.getVoices();
-//       const voice = voices.find((v) => v.lang === l) || voices.find((v) => v.lang.startsWith(l.slice(0, 2)));
-//       const parts = text.match(/[^.!?।]+[.!?।]?/g) || [text]; let i = 0;
-//       setTimeout(resolve, text.length * 110 + 4000); // watchdog: some browsers never fire onend
-//       const next = () => {
-//         if (my !== speakId || i >= parts.length) return resolve();
-//         const u = new SpeechSynthesisUtterance(parts[i++].trim()); u.lang = l; if (voice) u.voice = voice; u.rate = 1.03; u.onend = next; u.onerror = () => resolve();
-//         speechSynthesis.speak(u);
-//       };
-//       next();
-//     });
-//   } finally {
-//     if (my === speakId) { speaking = false; finishCaption(); if (inCall) afterBot(); }
-//   }
-// }
-// function afterBot() { if (!busy) { setOrb("listening", micOn ? undefined : "Mic is off. Type your reply."); startListening(); } }
-
-// /* =============== speech input =============== */
-// function startListening() {
-//   if (!SR || !inCall || !micOn || recActive || busy || (speaking && !$("barge").checked)) return;
-//   rec = new SR(); rec.lang = LANGS[lang]; rec.interimResults = true; rec.continuous = false;
-//   let finalText = "";
-//   rec.onstart = () => { recActive = true; };
-//   rec.onresult = (e) => {
-//     if (speaking && $("barge").checked) { speakId++; stopSpeaking(); speaking = false; finishCaption(); setOrb("listening"); }
-//     let interim = "";
-//     for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) finalText += x[0].transcript; else interim += x[0].transcript; }
-//     if (interim) { $("heard").className = "heard interim"; $("heard").textContent = interim; }
-//   };
-//   rec.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { micOn = false; setMic(); setOrb("idle", "Microphone blocked. Type your reply instead."); $("typer").classList.remove("hidden"); } };
-//   rec.onend = () => { recActive = false; if (finalText.trim()) handleUser(finalText.trim()); else if (inCall && !busy && !speaking && micOn) setTimeout(startListening, 200); };
-//   try { rec.start(); } catch {}
-// }
-// function stopListening() { if (rec && recActive) { rec.onend = null; try { rec.abort(); } catch {} recActive = false; } }
-// function setMic() { $("btnMic").setAttribute("aria-pressed", micOn); $("micTxt").textContent = micOn ? "Mic on" : "Mic off"; }
-
-// /* =============== conversation =============== */
-// async function callApi(body) {
-//   const t = performance.now();
-//   const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, lang, ...body }) });
-//   if (!r.ok) throw new Error("server " + r.status);
-//   const d = await r.json(); sessionId = d.sessionId; turns++;
-//   $("latency").textContent = `Reply in ${((performance.now() - t) / 1000).toFixed(1)}s · AI ${(d.ms / 1000).toFixed(1)}s`; $("latency").classList.remove("hidden"); try { localStorage.setItem("kamLatency", $("latency").textContent); } catch {}
-//   return d;
-// }
-// async function applyReply(d) {
-//   $("brainPill").textContent = brainLabel(d.mode); try { localStorage.setItem("kamBrain", $("brainPill").textContent); } catch {}
-//   (d.toolCalls || []).forEach(onTool);
-//   logLine("b", d.reply); busy = false; await speak(d.reply);
-// }
-// async function handleUser(text) {
-//   if (!inCall || busy) return;
-//   speakId++; stopSpeaking(); speaking = false; stopListening(); finishCaption();
-//   $("heard").className = "heard"; $("heard").textContent = text; logLine("y", text);
-//   busy = true; setOrb("thinking");
-//   try { await applyReply(await callApi({ text })); }
-//   catch { busy = false; setOrb("idle", "Connection problem. Say that again."); afterBot(); }
-// }
-// async function startCall(mode) {
-//   if (inCall) return;
-//   inCall = true; busy = true; micOn = true; setMic(); callMode = mode; reached = 0; turns = 0; toolCount = 0;
-//   STEPS = mode === "followup" ? STEPS_FU : STEPS_MAIN; renderJourney();
-//   $("timeJump").classList.toggle("hidden", mode !== "followup"); $("stats").classList.add("hidden"); $("btnFF").classList.add("hidden");
-//   if (mode !== "followup") {
-//     seen = new Set(); followupReady = false; $("btnFFdock").classList.add("hidden");
-//     ["linesFound", "linesImpact", "linesDone", "linesFollow"].forEach((id) => ($(id).innerHTML = ""));
-//     ["secFound", "secImpact", "secDone", "secFollow", "stamp", "rcFoot"].forEach((id) => $(id).classList.add("hidden")); $("rcEmpty").classList.remove("hidden");
-//     $("bigDelta").style.color = ""; renderDossier();
-//   } else { $("btnFFdock").classList.add("hidden"); }
-//   $("transcript").innerHTML = ""; $("checks").innerHTML = ""; $("caption").textContent = ""; $("heard").textContent = "";
-//   $("hero").classList.add("hidden"); ["live", "dock", "livePill"].forEach((id) => $(id).classList.remove("hidden"));
-//   sizeCanvas(); t0 = Date.now(); tick(); timerId = setInterval(tick, 1000);
-//   setOrb("thinking", mode === "proactive" ? "Riya is calling Rakesh…" : "Connecting to Riya…");
-//   speechSynthesis.getVoices(); await initMic();
-//   try { await applyReply(await callApi({ start: mode })); }
-//   catch { busy = false; endCall(); alert("Could not reach the server. Is `npm start` running?"); }
-// }
-// function endCall() {
-//   inCall = false; busy = false; speaking = false; speakId++; stopSpeaking(); stopListening(); clearInterval(timerId); finishCaption();
-//   const secs = Math.floor((Date.now() - t0) / 1000);
-//   $("stats").textContent = `Last call: ${Math.floor(secs / 60)}m ${secs % 60}s · ${turns} turns · ${toolCount} tool calls`; $("stats").classList.remove("hidden");
-//   if (followupReady && callMode !== "followup") $("btnFF").classList.remove("hidden");
-//   if (turns > 1) fetch("/api/calls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, sellerId: cfg?.seller?.id, type: callMode === "seller_call" ? "Seller called" : "Riya called", secs, mode: cfg?.brain || "offline", transcript: [...document.querySelectorAll("#transcript p")].map((p) => p.textContent), said: ([...document.querySelectorAll("#transcript p")].find((p) => p.className !== "b") || {}).textContent?.replace(/^You: /, "") || "" }) }).catch(() => {});
-//   setOrb("idle", "Call ended"); $("dock").classList.add("hidden"); $("typer").classList.add("hidden"); $("livePill").classList.add("hidden");
-//   $("hero").classList.remove("hidden"); $("live").classList.add("hidden");
-//   document.querySelector(".hero .lede").textContent = "That call is saved on the receipt. Start another to run it again.";
-// }
-// function tick() { const s = Math.floor((Date.now() - t0) / 1000); $("timer").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
-// const brainLabel = (m) => ({ gemini: "Gemini + tools", anthropic: "Claude + tools", offline: "Offline demo brain", "offline-fallback": "Offline (LLM unreachable)" }[m] || m) + (cfg?.tts ? " · ElevenLabs voice" : " · browser voice");
-
-// /* =============== wiring =============== */
-// $("btnProactive").onclick = () => startCall("proactive");
-// $("btnCall").onclick = () => startCall("seller_call");
-// $("btnEnd").onclick = endCall;
-// const startFollowup = () => { if (inCall) endCall(); startCall("followup"); };
-// $("btnFF").onclick = startFollowup; $("btnFFdock").onclick = startFollowup;
-// $("btnMic").onclick = () => { micOn = !micOn; setMic(); if (micOn) afterBot(); else stopListening(); };
-// $("btnKeys").onclick = () => { const o = $("typer").classList.toggle("hidden"); $("btnKeys").setAttribute("aria-expanded", !o); if (!o) $("typeInput").focus(); };
-// $("typeForm").onsubmit = (e) => { e.preventDefault(); const v = $("typeInput").value.trim(); if (v && inCall) { $("typeInput").value = ""; handleUser(v); } };
-// $("try").onclick = (e) => { const t = e.target.dataset?.t; if (t && inCall) handleUser(t); };
-// for (const [id, l] of [["langEn", "en"], ["langHi", "hi"]]) $(id).onclick = () => { lang = l; try { localStorage.setItem("kamLang", l); } catch {} $("langEn").setAttribute("aria-pressed", l === "en"); $("langHi").setAttribute("aria-pressed", l === "hi"); document.documentElement.lang = l; stopListening(); if (inCall && !busy && !speaking) startListening(); };
-// renderJourney();
-// $("langEn").setAttribute("aria-pressed", lang === "en"); $("langHi").setAttribute("aria-pressed", lang === "hi");
-// fetch("/api/config").then((r) => r.json()).then((c) => { cfg = c; $("brainPill").textContent = brainLabel(c.brain); renderDossier(); renderHero(); });
 const $ = (id) => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -675,12 +377,57 @@ function syncLanguageControls() {
 }
 
 /* =============== conversation =============== */
+// async function callApi(body) {
+//   const t = performance.now();
+//   const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, lang, sellerId: cfg.seller.id, ...body }) });
+//   if (!r.ok) throw new Error("server " + r.status);
+//   const d = await r.json(); sessionId = d.sessionId; turns++;
+//   $("latency").textContent = L(`Reply in ${((performance.now() - t) / 1000).toFixed(1)}s · AI ${(d.ms / 1000).toFixed(1)}s`, `जवाब ${((performance.now() - t) / 1000).toFixed(1)} से · AI ${(d.ms / 1000).toFixed(1)} से`); $("latency").classList.remove("hidden"); try { localStorage.setItem("kamLatency", $("latency").textContent); } catch {}
+//   return d;
+// }
 async function callApi(body) {
   const t = performance.now();
-  const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, lang, sellerId: cfg.seller.id, ...body }) });
-  if (!r.ok) throw new Error("server " + r.status);
-  const d = await r.json(); sessionId = d.sessionId; turns++;
-  $("latency").textContent = L(`Reply in ${((performance.now() - t) / 1000).toFixed(1)}s · AI ${(d.ms / 1000).toFixed(1)}s`, `जवाब ${((performance.now() - t) / 1000).toFixed(1)} से · AI ${(d.ms / 1000).toFixed(1)} से`); $("latency").classList.remove("hidden"); try { localStorage.setItem("kamLatency", $("latency").textContent); } catch {}
+
+  let r;
+
+  try {
+    r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        lang,
+        sellerId: cfg.seller.id,
+        ...body
+      })
+    });
+  } catch (error) {
+    console.error("API network error:", error);
+    throw new Error("Cannot connect to the backend. Check Render.");
+  }
+
+  if (!r.ok) {
+    const errorText = await r.text();
+    console.error("API error:", r.status, errorText);
+    throw new Error(`Backend error ${r.status}: ${errorText}`);
+  }
+
+  const d = await r.json();
+
+  if (!d.reply) {
+    throw new Error("Backend returned an empty AI response.");
+  }
+
+  sessionId = d.sessionId;
+  turns++;
+
+  $("latency").textContent = L(
+    `Reply in ${((performance.now() - t) / 1000).toFixed(1)}s · AI ${(d.ms / 1000).toFixed(1)}s`,
+    `जवाब ${((performance.now() - t) / 1000).toFixed(1)} से · AI ${(d.ms / 1000).toFixed(1)} से`
+  );
+
+  $("latency").classList.remove("hidden");
+
   return d;
 }
 async function applyReply(d) {
@@ -724,7 +471,20 @@ async function startCall(mode) {
     activeSpeaker = "Riya";
     await applyReply(await callApi({ start: mode }));
   }
-  catch { busy = false; endCall(); alert(L("Could not reach the server. Is `npm start` running?", "सर्वर से संपर्क नहीं हो पाया। क्या `npm start` चल रहा है?")); }
+  // catch { busy = false; endCall(); alert(L("Could not reach the server. Is `npm start` running?", "सर्वर से संपर्क नहीं हो पाया। क्या `npm start` चल रहा है?")); }
+  catch (error) {
+  console.error("Call startup failed:", error);
+
+  busy = false;
+  endCall();
+
+  alert(
+    L(
+      `Call failed: ${error.message}`,
+      `कॉल शुरू नहीं हो पाई: ${error.message}`
+    )
+  );
+}
 }
 function endCall() {
   inCall = false; busy = false; speaking = false; syncLanguageControls(); speakId++; stopSpeaking(); stopListening(); clearInterval(timerId); finishCaption();
