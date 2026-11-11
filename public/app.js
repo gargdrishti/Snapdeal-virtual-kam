@@ -321,26 +321,61 @@ async function speak(text, speaker = "Riya") {
         const r = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, gender, lang }) });
         if (r.ok) {
           const url = URL.createObjectURL(await r.blob());
-          await new Promise((res) => { curAudio = new Audio(url); curAudio.onended = curAudio.onerror = res; curAudio.play().catch(res); });
+          let played = false;
+          await new Promise((resolve) => {
+            const audio = new Audio(url);
+            audio.preload = "auto";
+            curAudio = audio;
+            const finish = () => {
+              audio.onended = audio.onerror = null;
+              if (curAudio === audio) curAudio = null;
+              resolve();
+            };
+            audio.onplay = () => { played = true; };
+            audio.onended = finish;
+            audio.onerror = () => {
+              console.warn("ElevenLabs audio playback failed; using browser speech.");
+              finish();
+            };
+            audio.play().catch((error) => {
+              console.warn("ElevenLabs audio could not start; using browser speech:", error.message);
+              finish();
+            });
+          });
           URL.revokeObjectURL(url);
-          return;
+          if (played) return;
         }
         if (r.status === 402 || r.status === 501) {
           if (gender === "female") cfg.tts = false;
           else cfg.ttsMale = false;
         }
-      } catch {}
+      } catch (error) {
+        console.warn("ElevenLabs TTS request failed; using browser speech:", error.message);
+      }
     }
     const l = LANGS[lang], voice = pickVoice(l, await loadVoices(), gender);
     await new Promise((resolve) => {
-      const parts = text.match(/[^.!?।]+[.!?।]?/g) || [text]; let i = 0;
-      setTimeout(resolve, text.length * 110 + 4000); // watchdog: some browsers never fire onend
-      const next = () => {
-        if (my !== speakId || i >= parts.length) return resolve();
-        const u = new SpeechSynthesisUtterance(parts[i++].trim()); u.lang = l; if (voice) u.voice = voice; u.rate = 0.96; u.pitch = 1; u.onend = next; u.onerror = () => resolve();
-        speechSynthesis.speak(u);
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(watchdog);
+        resolve();
       };
-      next();
+      const watchdog = setTimeout(finish, Math.max(10000, text.split(/\s+/).length * 600 + 5000));
+      if (my !== speakId) return finish();
+      const utterance = new SpeechSynthesisUtterance(text.trim());
+      utterance.lang = l;
+      if (voice) utterance.voice = voice;
+      utterance.rate = 0.92;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      utterance.onend = finish;
+      utterance.onerror = (event) => {
+        if (event.error !== "interrupted" && event.error !== "canceled") console.warn("Browser speech synthesis failed:", event.error);
+        finish();
+      };
+      speechSynthesis.speak(utterance);
     });
   } finally {
     if (my === speakId) { speaking = false; syncLanguageControls(); finishCaption(); if (inCall) afterBot(); }

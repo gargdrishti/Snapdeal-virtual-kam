@@ -104,10 +104,10 @@ app.post("/api/tts", async (req, res) => {
   if (!voice || unavailableElevenLabsVoices.has(voice)) return res.status(501).end();
   try {
     const languageCode = req.body?.lang === "hi" ? "hi" : "en";
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`, {
       method: "POST",
       headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      body: JSON.stringify({ text: String(req.body.text || "").slice(0, 800), model_id: "eleven_multilingual_v2", language_code: languageCode, voice_settings: { stability: 0.45, similarity_boost: 0.8 } }),
+      body: JSON.stringify({ text: String(req.body.text || "").slice(0, 800), model_id: "eleven_multilingual_v2", language_code: languageCode, voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true } }),
     });
     if (!r.ok) {
       if (r.status === 402) {
@@ -119,7 +119,10 @@ app.post("/api/tts", async (req, res) => {
     }
     res.set("Content-Type", "audio/mpeg");
     res.send(Buffer.from(await r.arrayBuffer()));
-  } catch { res.status(502).end(); }
+  } catch (error) {
+    console.error("ElevenLabs TTS request failed:", error.message);
+    res.status(502).end();
+  }
 });
 
 const port = process.env.PORT || 3000;
